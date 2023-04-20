@@ -1,0 +1,152 @@
+class maxheap:
+
+    def __init__(self,n):
+        self.vertex=[]
+        self.data=[]
+        self.pos=[-1]*n
+
+
+    def __len__(self):
+        return len(self.data)
+
+
+    def isempty(self):
+        return len(self.data)==0
+
+
+    def swap(self,i,j): # Time complexity is O(1) since each line takes O(1) time
+        self.data[i],self.data[j]=self.data[j],self.data[i]
+        self.vertex[i],self.vertex[j]=self.vertex[j],self.vertex[i]
+        self.pos[self.vertex[i]],self.pos[self.vertex[j]]=self.pos[self.vertex[j]],self.pos[self.vertex[i]]
+    
+    def heapdown(self,k):
+        if(2*k+2<len(self)):
+            if(self.data[2*k+1]>=self.data[2*k+2]):
+                max=2*k+1
+            else:
+                max=2*k+2
+        elif(2*k+1<len(self)):
+            max=2*k+1
+        else:
+            max=k
+        while(max!=k and self.data[k]<self.data[max]):
+            self.swap(k,max)
+            k=max
+            if(2*k+2<len(self)):
+                if(self.data[2*k+1]>=self.data[2*k+2]):
+                    max=2*k+1
+                else:
+                    max=2*k+2
+            elif(2*k+1<len(self)):
+                max=2*k+1
+            else:
+                max=k
+
+
+    def delete(self):
+        if(len(self)!=0):
+            self.swap(0,len(self.data)-1)
+            v=self.vertex.pop()
+            d=self.data.pop()
+            self.pos[v]=-1
+            self.heapdown(0)
+            return (v,d)
+
+
+    def heapUp(self,k):
+        while((self.data[k]>self.data[(k-1)//2]) and k!=0):
+            self.swap(k,(k-1)//2)
+            k=(k-1)//2
+
+
+    def insert(self,tup):
+        self.vertex.append(tup[0])
+        self.data.append(tup[1])
+        n=len(self.data)-1
+        self.pos[tup[0]]=n
+        self.heapUp(n)
+
+
+    def modify(self,pos,k):
+        self.data[pos]=k
+        self.heapUp(pos)
+
+
+    def position(self,v):
+        return self.pos[v]
+
+
+    def extract_data(self,pos):
+        return self.data[pos]
+
+
+    def __str__(self):
+        return ''.join(str(self.vertex)+"->"+str(self.pos)+"->"+str(self.data))
+
+
+def adjacencylist(list,n):
+    l=[]
+    for i in range (n):
+        l.append([])
+    i=0
+    while i<len(list):
+        (a,b,c)=list[i]
+        l[a].append((b,c))
+        l[b].append((a,c))
+        i+=1
+    return l
+
+def way(s,t,list):
+    l=[t]
+    p=list[t]
+    while p!=None:
+        l.append(p)
+        p=list[p]
+    l.append(s)
+    return l[::-1]
+
+def findMaxCapacity(n,links,s,t):
+    pred=[None]*n
+    for i in range (n):
+        pred.append([s])
+    visited=[False]*n
+    # visited[s]=True
+    adj_list=adjacencylist(links,n)
+    # print(adj_list)
+    size_of_packet=[0]*n
+    heap=maxheap(n)
+    adjacent_vertices=adj_list[s]
+    # print("l0",l0)
+    # print("heap",heap)
+    for v in adjacent_vertices:
+        heap.insert(v)
+    # print("heap",heap)
+    while not heap.isempty():
+        (w,dataw)=heap.delete()
+        visited[w]=True
+        # print("w",w,"dataw",dataw)
+        # print("heap",heap)
+        size_of_packet[w]=dataw
+        # print("large_pack",large_pack)
+        if w==t:
+            break
+        l=adj_list[w]
+        # print("l",l)
+        # print("pred",pred)
+        for v in l:
+            posv=heap.position(v[0])
+            if posv!=-1:
+                datav=heap.extract_data(posv)
+                if dataw>datav:
+                    p=min(dataw,v[1])
+                    if p>datav:
+                        heap.modify(posv,p)
+                        pred[v[0]]=w
+                        # print(pred)
+            elif posv==-1 and visited[v[0]]==False:
+                p=min(dataw,v[1])
+                heap.insert((v[0],p))
+                pred[v[0]]=w
+        # print("heap",heap)
+        # print("pred",pred)
+    return (size_of_packet[t],way(s,t,pred)) 
