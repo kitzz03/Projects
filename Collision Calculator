@@ -1,0 +1,145 @@
+class priorityQueue:
+    def __init__(self):
+        self.time=[] # will contain time after which collicion takes place btw (i)th and (i+1)th particle
+        self.index=[] # will contain index "i" of particle colliding at this time
+        self.pos=[] # will contain index at which (i)th particle's colliding time is stored
+
+    def __len__(self): # O(1)
+        return len(self.time)
+    
+    def isEmpty(self): # O(1)
+        return len(self)==0
+
+    def swap(self,i,j): # Time complexity is O(1) since each line takes O(1) time
+        self.time[i],self.time[j]=self.time[j],self.time[i]
+        self.index[i],self.index[j]=self.index[j],self.index[i]
+        self.pos[self.index[i]],self.pos[self.index[j]]=self.pos[self.index[j]],self.pos[self.index[i]]
+    
+    def changeReq(self,k,child): # O(1)
+        if((self.time[k]>self.time[child]) or (self.time[k]==self.time[child] and self.index[k]>self.index[child])):
+            return True
+        return False
+    
+    def childIndex(self,k): # Time complexity is O(1) since each line takes O(1) time
+        if(2*k+2<len(self)): # if right child exists
+            if(self.time[2*k+1]<self.time[2*k+2]):
+                child=2*k+1
+            elif(self.time[2*k+1]>self.time[2*k+2]):
+                child=2*k+2
+            else:
+                if(self.index[2*k+1]<self.index[2*k+2]):
+                    child=2*k+1
+                else:
+                    child=2*k+2
+        elif(2*k+1<len(self)): # if left child exists
+            child=2*k+1
+        else:
+            child=k
+        return child
+
+    def heapDown(self,k): # Time complexity is O(log n)
+        child=self.childIndex(k) # O(1)
+        change=self.changeReq(k,child) # O(1)
+        while(child!=k and change==True): # The loop runs at max "height" number of times which is approximately log(n)
+        # Therefore time complexity of loop is O(log n)
+            self.swap(k,child) # O(1)
+            k=child
+            child=self.childIndex(k) # O(1)
+            change=self.changeReq(k,child) # O(1)
+        
+
+    def heapUp(self,k): # Time complexity is O(log n)
+        k_new=(k-1)//2
+        while((self.time[k]<self.time[k_new]) and k!=0):  # The loop runs at max "height" number of times which is approximately log(n)
+        # Therefore time complexity of loop is O(log n)
+            self.swap(k,k_new) # O(1)
+            k=k_new
+            k_new=(k-1)//2
+
+    def collision(self,key): # Time complexity is O(log n)
+            val=self.time[0] # O(1)
+            r=self.index[0] # O(1)
+            self.newTime(0,key) # O(log n)
+            return (val,r)
+
+    def heapify(self,arr): # Time complexity is O(n) as proved in lecture notes
+        for i in range(0,len(arr)):
+            self.time.append(arr[i])
+            self.index.append(i)
+            self.pos.append(i)
+        for k in range(len(self)-1,-1,-1):
+            self.heapDown(k)
+
+    def newTime(self,k,t_new): # Time complexity is O(log n)
+        if (self.time[k]<t_new):
+            self.time[k]=t_new
+            self.heapDown(k) # O(log n)
+        elif (self.time[k]>t_new):
+            self.time[k]=t_new
+            self.heapUp(k) # O(log n)
+
+    def positionInHeap(self,r): # O(1)
+        return self.pos[r]
+
+def newVel(m1,m2,u1,u2): # O(1)
+    v1=((m1-m2)*u1+(2*m2*u2))/(m1+m2)
+    v2=((m2-m1)*u2+(2*m1*u1))/(m1+m2)
+    return (v1,v2)
+
+def timeBeforeCollision(x1,x2,u1,u2): # O(1)
+    if(u1==u2):
+        return -1
+    return (x2-x1)/(u1-u2)
+
+def precision(time,i,coordinate): # O(1)
+    round_time=round(time,4)
+    round_coordinate=round(coordinate,4)
+    return (round_time,i,round_coordinate)
+
+def listCollisions(M,x,v,m,T):
+    heap=priorityQueue()
+    listOfTimes=[]
+    timeOfLastCollison=[]
+    listOfCollisions=[]
+    for i in range(0,len(v)-1):
+        timeOfLastCollison.append(0) # O(1)
+        collisionTime=timeBeforeCollision(x[i],x[i+1],v[i],v[i+1]) # O(1)
+        if (collisionTime>0):
+            listOfTimes.append(collisionTime)
+        else:
+            listOfTimes.append(T+1)
+    # Since the loop runs n-1 number of times therefor time complexity of loop is (n-1)*O(1) = O(n)
+    timeOfLastCollison.append(0) # O(1)
+    heap.heapify(listOfTimes) # O(n)
+    noOfCollisions=current_Time=0
+    if heap.isEmpty():
+        return listOfCollisions
+    while(current_Time<=T and noOfCollisions<m): # The loop runs 'm' number of times where m is the number of collisions in final list
+        (time,indexOfParticleColliding)=heap.collision(T+1) # O(log n)
+        if(time>=T):
+            break
+        current_Time=time # O(1)
+        new_Coordinate=x[indexOfParticleColliding]+v[indexOfParticleColliding]*(current_Time-timeOfLastCollison[indexOfParticleColliding]) # O(1)
+        x[indexOfParticleColliding]=x[indexOfParticleColliding+1]=new_Coordinate # O(1)
+        timeOfLastCollison[indexOfParticleColliding]=timeOfLastCollison[indexOfParticleColliding+1]=time # O(1)
+        (v[indexOfParticleColliding],v[indexOfParticleColliding+1])=newVel(M[indexOfParticleColliding],M[indexOfParticleColliding+1],v[indexOfParticleColliding],v[indexOfParticleColliding+1]) # O(1)
+        noOfCollisions+=1
+        listOfCollisions.append(precision(current_Time,indexOfParticleColliding,new_Coordinate)) # O(1)
+        if(indexOfParticleColliding-1>=0):
+            timeOfCollisionOfLeftParticle=timeBeforeCollision(x[indexOfParticleColliding-1]+v[indexOfParticleColliding-1]*(current_Time-timeOfLastCollison[indexOfParticleColliding-1]),x[indexOfParticleColliding],v[indexOfParticleColliding-1],v[indexOfParticleColliding]) # O(1)
+            if (timeOfCollisionOfLeftParticle<=0):
+                timeOfCollisionOfLeftParticle=T+1 # O(1)
+            else:
+                timeOfCollisionOfLeftParticle+=time
+            heap.newTime(heap.positionInHeap(indexOfParticleColliding-1),timeOfCollisionOfLeftParticle) # O(1)
+        if(indexOfParticleColliding+2<len(v)):
+            timeOfCollisionOfRightParticle=timeBeforeCollision(x[indexOfParticleColliding+1],x[indexOfParticleColliding+2]+v[indexOfParticleColliding+2]*(current_Time-timeOfLastCollison[indexOfParticleColliding+2]),v[indexOfParticleColliding+1],v[indexOfParticleColliding+2]) # O(1)
+            if (timeOfCollisionOfRightParticle<=0):
+                timeOfCollisionOfRightParticle=T+1 # O(1)
+            else:
+                timeOfCollisionOfRightParticle+=time
+            heap.newTime(heap.positionInHeap(indexOfParticleColliding+1),timeOfCollisionOfRightParticle) # O(1)
+    # Since, time complexity of loop in single iteration is O(log n)
+    # And the loop runs 'm' number of times, therefore Time complexity is O( m*log n)
+    # Hence, total Time complexity of 'listCollisions' function is O(n)+O(m*log n) = O( n + mlogn )
+    return listOfCollisions
