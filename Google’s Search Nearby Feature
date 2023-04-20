@@ -1,0 +1,124 @@
+class Node:
+    def __init__(self, point, listy=[], left=None, right=None):
+        self.point = point
+        self.listy=listy
+        self.left=left
+        self.right=right
+
+class RangeTree2d:
+    def __init__(self,L):
+        self.head=self.createTree2d(L,0,len(L)-1)
+    
+    def merge(self,test_list1,test_list2):
+        size_1 = len(test_list1)
+        size_2 = len(test_list2)
+        res = []
+        i, j = 0, 0
+        while i < size_1 and j < size_2:
+            if test_list1[i][1]< test_list2[j][1]:
+                res.append(test_list1[i])
+                i += 1
+            elif test_list1[i][1]> test_list2[j][1]:
+                res.append(test_list2[j])
+                j += 1  
+            else:
+                res.append(test_list1[i])
+                i += 1
+                j += 1
+        res = res + test_list1[i:] + test_list2[j:]
+        return res
+    
+    def createTree2d(self,L,si,ei):
+        n=ei-si+1
+        if n%2==0:
+            m=si+n//2-1
+        else:
+            m=si+n//2
+        if n==1:
+            ylist=[L[si]]
+            self.head=Node(L[si],ylist)
+        else:
+            vleft=self.createTree2d(L,si,m)
+            vright=self.createTree2d(L,m+1,ei)
+            ylist=self.merge(vleft.listy,vright.listy)
+            self.head=Node(L[m],ylist,vleft,vright)
+        return self.head
+
+    def splitNode(self,p,min,max):
+        if p==None:
+            return None
+        elif p.point[0]>=min and p.point[0]<max:
+            return p
+        elif p.point[0]<min:
+            return self.splitNode(p.right,min,max)
+        elif p.point[0]>=max:
+            if p.point[0]==max and p.left==None:
+                return p
+            else:
+                return self.splitNode(p.left,min,max)
+
+    def binarySearchLower(self,L,val,si,ei):
+        n=ei-si+1
+        if n%2==0:
+            m=si+n//2-1
+        else:
+            m=si+n//2
+        if si>ei:
+            return -1
+        if m-1<si and val<L[m][1]:
+            return m
+        if val==L[m][1] or (val<L[m][1] and val>L[m-1][1]):
+            return m
+        elif val<L[m][1]:
+            return self.binarySearchLower(L,val,si,m-1)
+        elif val>L[m][1]:
+            return self.binarySearchLower(L,val,m+1,ei)
+
+    def binarySearchUpper(self,L,val,si,ei):
+        n=ei-si+1
+        if n%2==0:
+            m=si+n//2-1
+        else:
+            m=si+n//2
+        if ei<si:
+            return -1
+        if m+1>ei and val>L[m][1]:
+            return m
+        if val==L[m][1] or (val>L[m][1] and val<L[m+1][1]):
+            return m
+        elif val<L[m][1]:
+            return self.binarySearchUpper(L,val,si,m-1)
+        elif val>L[m][1]:
+            return self.binarySearchUpper(L,val,m+1,ei)
+    
+    def searchHelper(self,L,q,d,l):
+        miny=q[1]-d
+        maxy=q[1]+d
+        lower_index=self.binarySearchLower(L,miny,0,len(L)-1)
+        upper_index=self.binarySearchUpper(L,maxy,0,len(L)-1)
+        if lower_index==-1 or upper_index==-1:
+            return l
+        else:
+            for i in range(lower_index,upper_index+1):
+                dist=max(abs(L[i][1]-q[1]),abs(L[i][0]-q[0]))
+                if dist<=d:
+                    l.append(L[i])
+        return l
+
+class PointDatabase:
+    
+    def __init__(self,L):
+        if len(L)==0:
+            self.head=None
+        else:
+            L= sorted(L, key=lambda x: x[0])
+            self.head=RangeTree2d(L)
+
+    def searchNearby(self,q,d):
+        if self.head==None:
+            return []
+        vsplit=self.head.splitNode(self.head.head,q[0]-d,q[0]+d)
+        if vsplit==None:
+            return []
+        l=self.head.searchHelper(vsplit.listy,q,d,[])
+        return l
